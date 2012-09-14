@@ -1,0 +1,57 @@
+=encoding iso-8859-1
+
+=head1 NAME
+
+AnyEvent::Sereal - Sereal stream serializer/deserializer for AnyEvent
+
+=head1 SYNOPSIS
+
+    use AnyEvent::Sereal;
+    use AnyEvent::Handle;
+
+    my $hdl = AnyEvent::Handle->new(
+        # settings...
+    );
+    $hdl->push_write(sereal => [ 1, 2, 3 ]);
+    $hdl->push_read(sereal => sub {
+        my($hdl, $data) = @_;
+          # $data is [ 1, 2, 3 ]
+    });
+
+    # Can pass L<Sereal::Encoder> options to C<push_write>
+    $hdl->push_write(sereal => 'a' x 1_000, { snappy => 1 });
+
+    # And pass L<Sereal::Decoder> options to C<push_read>
+    $hdl->push_read(sereal => { refuse_snappy => 1 }, sub { ... });
+
+=head1 DESCRIPTION
+
+L<AnyEvent::Sereal> is Sereal serializer/deserializer for L<AnyEvent>.
+
+The maximum size of serialized (and possibly compressed) data is
+specified by the variable
+C<$AnyEvent::Sereal::SERIALIZED_MAX_SIZE>. It defaults to 1_000_000
+bytes. In case received data seems to contain more than this number of
+bytes, an error C<Errno::E2BIG> is given to the error handler.
+
+
+=head1 SEE ALSO
+
+L<AnyEvent::Handle> and storable filter.
+
+L<Sereal::Encoder> and L<Sereal::Decoder>.
+
+=head1 AUTHOR
+
+Maxime SoulE<eacute>, E<lt>btik-cpan@scoubidou.comE<gt>
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2012 by Ijenko.
+
+http://www.ijenko.com
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
+
+=cut
