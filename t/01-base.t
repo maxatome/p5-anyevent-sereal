@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 11;
+use Test::More tests => 25;
 
 use AnyEvent;
 BEGIN { require AnyEvent::Impl::Perl unless $ENV{PERL_ANYEVENT_MODEL} }
@@ -44,19 +44,47 @@ $error = set_and_run_loop
 {
     my($wr_ae, $rd_ae) = @_;
 
+    #
+    # Encode...
     $wr_ae->push_write(sereal => [4,3,2]);
+    isa_ok(my $internal_encoder = $wr_ae->{_sereal_encoder},
+	   Sereal::Encoder::);
+
     $wr_ae->push_write(sereal => 12);
+    is($wr_ae->{_sereal_encoder}, $internal_encoder); # same encoder
+
     $wr_ae->push_write(sereal => 0);
+    is($wr_ae->{_sereal_encoder}, $internal_encoder); # same encoder
+
     $wr_ae->push_write(sereal => undef);
+    is($wr_ae->{_sereal_encoder}, $internal_encoder); # same encoder
+
     $wr_ae->push_write(sereal => 'a' x 1000, { snappy => 1 });
+    isnt($wr_ae->{_sereal_encoder}, $internal_encoder); # *new* encoder
+    isa_ok($internal_encoder = $wr_ae->{_sereal_encoder}, Sereal::Encoder::);;
+
     $wr_ae->push_write(sereal => bless { a => 1 }, 'FooBar');
+    is($wr_ae->{_sereal_encoder}, $internal_encoder); # same encoder
     undef $_[0]; # undef $wr_ae in the caller context
 
+    #
+    # Now decode...
     $rd_ae->push_read(sereal => sub { is("@{$_[1]}", "4 3 2") });
+    isa_ok(my $internal_decoder = $rd_ae->{_sereal_decoder},
+	   Sereal::Decoder::);
+
     $rd_ae->push_read(sereal => sub { is($_[1], 12) });
-    $rd_ae->push_read(sereal => sub { is($_[1], 0) });
+    is($rd_ae->{_sereal_decoder}, $internal_decoder); # same decoder
+
+    $rd_ae->push_read(sereal => { refuse_snappy => 1 }, sub { is($_[1], 0) });
+    isnt($rd_ae->{_sereal_decoder}, $internal_decoder); # *new* decoder
+    isa_ok($internal_decoder = $rd_ae->{_sereal_decoder}, Sereal::Decoder::);
+
     $rd_ae->push_read(sereal => sub { is($_[1], undef) });
+    is($rd_ae->{_sereal_decoder}, $internal_decoder); # same decoder
+
     $rd_ae->push_read(sereal => sub { is($_[1], 'a' x 1000) });
+    is($rd_ae->{_sereal_decoder}, $internal_decoder); # same decoder
 
     $rd_ae->push_read(sereal => sub
 		      {
@@ -65,6 +93,7 @@ $error = set_and_run_loop
 			  isa_ok($obj, 'FooBar');
 			  is_deeply($obj, { a => 1 });
 		      });
+    is($rd_ae->{_sereal_decoder}, $internal_decoder); # same decoder
 };
 is($error, undef);
 
