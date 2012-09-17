@@ -1,5 +1,9 @@
 Revision history for Perl extension AnyEvent::Sereal.
 
+0.004 Mon Sep 17 22:41:13 CEST 2012
+      Documentation completed.
+      Requests Sereal::{En,De}coder 0.09
+
 0.003 Sun Sep 16 21:58:12 CEST 2012
       Don't import {en,de}code_sereal functions anymore.
 
