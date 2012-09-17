@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 25;
+use Test::More tests => 26;
 
 use AnyEvent;
 BEGIN { require AnyEvent::Impl::Perl unless $ENV{PERL_ANYEVENT_MODEL} }
@@ -59,7 +59,7 @@ $error = set_and_run_loop
     $wr_ae->push_write(sereal => undef);
     is($wr_ae->{_sereal_encoder}, $internal_encoder); # same encoder
 
-    $wr_ae->push_write(sereal => 'a' x 1000, { snappy => 1 });
+    $wr_ae->push_write(sereal => 'a' x 10_000, { snappy => 1 });
     isnt($wr_ae->{_sereal_encoder}, $internal_encoder); # *new* encoder
     isa_ok($internal_encoder = $wr_ae->{_sereal_encoder}, Sereal::Encoder::);;
 
@@ -83,8 +83,9 @@ $error = set_and_run_loop
     $rd_ae->push_read(sereal => sub { is($_[1], undef) });
     is($rd_ae->{_sereal_decoder}, $internal_decoder); # same decoder
 
-    $rd_ae->push_read(sereal => sub { is($_[1], 'a' x 1000) });
-    is($rd_ae->{_sereal_decoder}, $internal_decoder); # same decoder
+    $rd_ae->push_read(sereal => {}, sub { is($_[1], 'a' x 10_000) });
+    isnt($rd_ae->{_sereal_decoder}, $internal_decoder); # *new* decoder
+    isa_ok($internal_decoder = $rd_ae->{_sereal_decoder}, Sereal::Decoder::);
 
     $rd_ae->push_read(sereal => sub
 		      {
